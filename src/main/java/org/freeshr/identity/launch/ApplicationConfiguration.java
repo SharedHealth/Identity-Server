@@ -1,5 +1,8 @@
 package org.freeshr.identity.launch;
 
+import org.freeshr.identity.repository.IdentityRepository;
+import org.freeshr.identity.repository.IdentityRepositoryImpl;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
@@ -7,6 +10,7 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.http.converter.xml.Jaxb2CollectionHttpMessageConverter;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
+import java.io.IOException;
 import java.util.List;
 
 @Configuration
@@ -17,5 +21,11 @@ public class ApplicationConfiguration extends WebMvcConfigurationSupport {
         converters.add(new MappingJackson2HttpMessageConverter());
         converters.add(new Jaxb2CollectionHttpMessageConverter<>());
         super.configureMessageConverters(converters);
+    }
+
+    @Bean
+    public IdentityRepository identityRepository() throws IOException
+    {
+        return new IdentityRepositoryImpl();
     }
 }

@@ -1,109 +1,75 @@
 buildscript {
     repositories {
-        maven { url "https://repo.spring.io/libs-release" }
         mavenLocal()
         mavenCentral()
     }
     dependencies {
-        classpath(
-                'org.springframework.boot:spring-boot-gradle-plugin:1.1.9.RELEASE'
-                , 'net.saliman:gradle-cobertura-plugin:2.2.4'
-                , 'com.netflix.nebula:gradle-ospackage-plugin:2.+'
-        )
+        // https://mvnrepository.com/artifact/com.netflix.nebula/gradle-ospackage-plugin
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:11.3.0'
+
     }
 }
 
-apply plugin: 'java'
-apply plugin: 'eclipse'
-apply plugin: 'idea'
-apply plugin: 'spring-boot'
-apply plugin: 'cobertura'
-apply plugin: 'rpm'
-apply plugin: 'war'
 
-
-idea{
-    project{
-        jdkName = '1.8'
-        languageLevel = '1.8'
-    }
+plugins {
+    id 'java'
+    id 'idea'
+    id 'org.springframework.boot' version '3.1.0'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'com.netflix.nebula.rpm' version '11.3.0'
+    id 'war'
 }
 
-jar {
-    baseName = 'identity-service'
-    version =  '0.1.0'
-}
+group = 'org.freeshr'
+version = '0.1'
+sourceCompatibility = 17
+targetCompatibility = 17
+ext.mainClassName = "org.freeshr.identity.launch.Application"
 
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://repo.spring.io/libs-release" }
-    jcenter()
 }
 
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.12'
-}
-
-
-dependencies {
-    compile("org.springframework.boot:spring-boot-starter-web")
-    compile("org.springframework.boot:spring-boot-starter-thymeleaf")
-    compile("org.springframework.boot:spring-boot-starter-actuator"){
-        exclude group: 'ch.qos.logback', module: "logback-classic"
+idea {
+    project {
+        jdkName = '17'
+        languageLevel = '17'
     }
-    compile("org.apache.commons:commons-lang3:3.3.2")
-    testCompile("junit:junit")
-    testCompile("com.github.tomakehurst:wiremock:1.52")
-    testCompile "org.mockito:mockito-core:1.8.4"
-    testCompile "org.springframework:spring-test:4.0.3.RELEASE"
-    testCompile 'com.jayway.restassured:rest-assured:2.4.0'
+}
+
+jar {
+    archiveBaseName = 'identity-service'
+    archiveVersion = '0.1.0'
+}
+
+wrapper {
+    gradleVersion = '8.1.1'
 }
 
 
-def getRunProcessBuilder() {
-    def builder = new ProcessBuilder('./gradlew', 'run')
-    builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
-    return builder
-}
-
-def getDebugProcessBuilder() {
-    def builder = new ProcessBuilder('./gradlew', 'run', '--debug', '--debug-jvm')
-    builder.redirectOutput(ProcessBuilder.Redirect.INHERIT)
-    return builder
-}
-
-
-task runIS << {
-    ProcessBuilder builder = getRunProcessBuilder()
-    Process process = builder.start();
-    process.waitFor();
-}
-
-task debugIS << {
-    ProcessBuilder builder = getDebugProcessBuilder()
-    Process process = builder.start();
-    process.waitFor();
-}
-
-
-cobertura {
-    coverageFormats = ['html', 'xml']
-    coverageIgnoreTrivial = true
-    coverageIgnores = ['org.slf4j.Logger.*']
-    coverageReportDir = new File("$buildDir/reports/cobertura")
-}
-
-test.finalizedBy(project.tasks.cobertura)
-
-
-mainClassName = "org.freeshr.identity.launch.Application"
 
 war {
     from sourceSets.main.resources
+
     manifest {
         attributes('Main-Class': mainClassName)
     }
+}
+
+dependencies {
+    implementation 'org.apache.commons:commons-lang3:3.12.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.2'
+    testImplementation 'com.jayway.restassured:rest-assured:2.9.0'
+    testImplementation 'org.mockito:mockito-core:5.3.1'
+    testImplementation 'com.github.tomakehurst:wiremock:2.27.2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
 }
 
 private Properties loadConfig() {
@@ -112,51 +78,57 @@ private Properties loadConfig() {
     properties
 }
 
-task assembly(dependsOn: 'build') << {
-    new File("${buildDir}/etc/").mkdir();
+task assembly(dependsOn: 'build') {
+    doLast {
+        new File("${buildDir}/etc/").mkdir();
+    }
 }
 
-task exportProperties(dependsOn: 'assembly') << {
-    PrintStream output = new PrintStream(new FileOutputStream(file("${buildDir}/etc/identity-server")));
-    Properties properties = loadConfig()
-    properties.each { prop, val ->
-        output.println("export " + prop + "=" + val)
+task exportProperties(dependsOn: 'assembly') {
+
+    doLast {
+        PrintStream output = new PrintStream(new FileOutputStream(file("${buildDir}/etc/identity-server")));
+        Properties properties = loadConfig()
+        properties.each { prop, val ->
+            output.println("export " + prop + "=" + val)
+        }
     }
 }
 
 task dist(dependsOn: 'exportProperties', type: Rpm) {
-    packageName = 'identity-server'
-    version = '0.1'
-    release = project.hasProperty('release') ? project.release : '1'
-    arch = NOARCH
-    os = LINUX
 
-    into '/opt/identity-server'
+        packageName = 'identity-server'
+        version = '0.1.0'
+        release = project.hasProperty('release') ? project.release : '1'
+        arch = NOARCH
+        os = LINUX
 
-    postInstall = file('scripts/utils/postInstall.sh')
-    preUninstall = file('scripts/utils/preUninstall.sh')
-    postUninstall = file('scripts/utils/postUninstall.sh')
+        into '/opt/identity-server'
 
-    from("${buildDir}/etc") {
-        fileMode = 0755
-        into 'etc'
-    }
+        postInstall = file('scripts/utils/postInstall.sh')
+        preUninstall = file('scripts/utils/preUninstall.sh')
+        postUninstall = file('scripts/utils/postUninstall.sh')
 
-    from("scripts/rpm") {
-        fileMode = 0755
-        exclude 'placeholder'
-        into 'bin'
-    }
+        from("${buildDir}/etc") {
+            fileMode = 0755
+            into 'etc'
+        }
 
-    from("${buildDir}/libs") {
-        fileMode = 0755
-        into 'lib'
-    }
+        from("scripts/rpm") {
+            fileMode = 0755
+            exclude 'placeholder'
+            into 'bin'
+        }
 
-    from("scripts/rpm") {
-        fileMode = 0755
-        exclude 'identity-server'
-        into 'var'
-    }
+        from("${buildDir}/libs") {
+            fileMode = 0755
+            into 'lib'
+        }
+
+        from("scripts/rpm") {
+            fileMode = 0755
+            exclude 'identity-server'
+            into 'var'
+        }
+
 }
-

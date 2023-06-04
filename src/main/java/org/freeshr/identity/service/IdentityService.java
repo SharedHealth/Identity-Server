@@ -1,5 +1,6 @@
 package org.freeshr.identity.service;
 
+import org.freeshr.identity.model.PatientCreds;
 import org.freeshr.identity.model.UserCredentials;
 import org.freeshr.identity.model.UserInfo;
 import org.freeshr.identity.repository.IdentityRepository;
@@ -10,9 +11,9 @@ import java.io.IOException;
 
 @Component
 public class IdentityService {
+    @Autowired
     private IdentityRepository identityRepository;
 
-    @Autowired
     public IdentityService(IdentityRepository identityRepository) {
         this.identityRepository = identityRepository;
     }
@@ -27,5 +28,9 @@ public class IdentityService {
             return userCredentialsOfToken == null ? null : identityRepository.getUserInfo(userCredentialsOfToken.getEmail());
         }
         return null;
+    }
+
+    public void addPatient(PatientCreds creds){
+        identityRepository.addPatient(creds);
     }
 }
