@@ -1,10 +1,12 @@
 package org.freeshr.identity.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import org.freeshr.identity.model.PatientCreds;
 import org.freeshr.identity.model.UserCredentials;
 import org.freeshr.identity.model.UserInfo;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -20,12 +22,10 @@ import java.util.UUID;
 @Component
 public class IdentityRepositoryImpl extends PropertyReader implements IdentityRepository
 {
-    @Value("${USER_DETAIL_FILE_PATH:null}")
-    private String USER_DETAIL_FILE_PATH;
-
-    @Value("${USER_PASSWORD_FILE_PATH:null}")
+    private final String USER_DETAIL_FILE_PATH;
+    @Value("${USER_PASSWORD_FILE_PATH}")
     private String USER_PASSWORD_FILE_PATH;
-    @Value("${PATIENT_PORTAL_CLIENT_ID:18800}")
+    @Value("${PATIENT_PORTAL_CLIENT_ID}")
     private String PATIENT_PORTAL_CLIENT_ID;
     Map<String, String> userPasswords = new HashMap<>();
     Map<String, UserCredentials> sessions = new HashMap<>();
@@ -33,8 +33,9 @@ public class IdentityRepositoryImpl extends PropertyReader implements IdentityRe
     Map<String, String> clients = new HashMap<>();
     private Map<String, String> users = new HashMap<>();
 
-    public IdentityRepositoryImpl() throws IOException
+    public IdentityRepositoryImpl(@Value("${USER_DETAIL_FILE_PATH}") String userDetailFilePath) throws IOException
     {
+        USER_DETAIL_FILE_PATH = userDetailFilePath;
         loadUserPasswords();
         loadClients();
         loadUserProfiles();
@@ -53,8 +54,8 @@ public class IdentityRepositoryImpl extends PropertyReader implements IdentityRe
     private void loadUserProfiles() throws IOException
     {
         Properties properties;
-        properties = loadProperties("userDetail.properties");
-        //properties = loadPropertiesFromFile(USER_DETAIL_FILE_PATH);
+        //properties = loadProperties("userDetail.properties");
+        properties = loadPropertiesFromFile(USER_DETAIL_FILE_PATH);
         for (String user : properties.stringPropertyNames())
         {
             users.put(user, properties.getProperty(user));
@@ -63,8 +64,8 @@ public class IdentityRepositoryImpl extends PropertyReader implements IdentityRe
 
     private void loadUserPasswords()
     {
-        Properties properties = loadProperties("userPassword.properties");
-        //Properties properties = loadProperties(USER_PASSWORD_FILE_PATH);
+        //Properties properties = loadProperties("userPassword.properties");
+        Properties properties = loadPropertiesFromFile(USER_PASSWORD_FILE_PATH);
         for (String user : properties.stringPropertyNames())
         {
             userPasswords.put(user, properties.getProperty(user));
