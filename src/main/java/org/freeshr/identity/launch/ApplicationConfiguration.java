@@ -23,9 +23,5 @@ public class ApplicationConfiguration extends WebMvcConfigurationSupport {
         super.configureMessageConverters(converters);
     }
 
-    @Bean
-    public IdentityRepository identityRepository() throws IOException
-    {
-        return new IdentityRepositoryImpl();
-    }
+
 }

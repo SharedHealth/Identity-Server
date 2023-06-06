@@ -6,6 +6,12 @@ public class PatientCreds
     private String password;
     private String name;
 
+    public PatientCreds(String name, String password, String healthId) {
+        this.healthId = healthId;
+        this.password = password;
+        this.name = name;
+    }
+
     public String getHealthId()
     {
         return healthId;

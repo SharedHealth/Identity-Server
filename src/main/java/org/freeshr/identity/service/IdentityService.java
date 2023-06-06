@@ -5,6 +5,7 @@ import org.freeshr.identity.model.UserCredentials;
 import org.freeshr.identity.model.UserInfo;
 import org.freeshr.identity.repository.IdentityRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -12,6 +13,7 @@ import java.io.IOException;
 @Component
 public class IdentityService {
     @Autowired
+    @Qualifier("identity-impl")
     private IdentityRepository identityRepository;
 
     public IdentityService(IdentityRepository identityRepository) {

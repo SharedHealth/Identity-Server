@@ -1,5 +1,6 @@
 package org.freeshr.identity.controller;
 
+import org.freeshr.identity.model.PatientCreds;
 import org.freeshr.identity.model.UserCredentials;
 import org.freeshr.identity.model.UserInfo;
 import org.freeshr.identity.service.IdentityService;
@@ -75,6 +76,19 @@ public class IdentityController implements WebMvcConfigurer {
             throw new InvalidTokenException("Invalid token");
         }
         return userInfo;
+    }
+
+    @RequestMapping(value = "/add-patient", method = RequestMethod.POST)
+    public
+    @ResponseBody
+    String AddPatient(@RequestParam("name") String name, @RequestParam("password") String password, @RequestParam("healthId") String healthId){
+        try {
+            PatientCreds patientCreds = new PatientCreds(name, password, healthId);
+            identityService.addPatient(patientCreds);
+            return "Patient created successfully";
+        } catch (Exception e) {
+            return "Exception on patient creation";
+        }
     }
 
     private Map<String, String> addAccessTokenToResponse(UserCredentials userCredentials, HttpServletResponse response, HttpServletRequest request) {
